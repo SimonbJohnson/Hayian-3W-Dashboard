@@ -1,7 +1,4 @@
-<?php
+3W visualisation of the response to Typhoon Haiyan in the Philippines
+==============
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-?>
+A dc.js visualisation of 3W data
