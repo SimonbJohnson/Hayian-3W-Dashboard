@@ -7,6 +7,7 @@
     <!-- Bootstrap -->
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+    <script src="//code.jquery.com/jquery.js"></script>
   </head>
   <body>
 
@@ -14,7 +15,7 @@
       <div class="row">
         <div class="col-lg-4">
           <div class="row">
-            <h1>3W Dashboard</h1>
+            <h3>3W Dashboard</h3>
             <div class="col-xs-12">Explore 3W data for Typhoon Haiyan. Source <a href="https://docs.google.com/spreadsheet/ccc?key=0At0Y9gPUymOmdHNoQ3VyR2JfZElnLXBJNFY2d3M1TUE&usp=sharing">UN OCHA</a></div>
             <div id="count-info" class="col-xs-8">
               <span class="filter-count "></span> selected out of <span class="total-count "></span> records
@@ -39,18 +40,36 @@
           </div>
         </div>
         <div id="map" class="col-lg-8">
-          <h3>Map (Where)</h3><span class="reset" style="display: none;"> | Current filter: <span class="filter"></span></span>
+          <h3>Map (Where)</h3><p><a href="javascript:municipalitiesMapShow();">Municipalities</a></p>
         </div>
+        <div id="map2" class="col-lg-8">
+          <h3>Map (Where)</h3><p><a href="javascript:provincesMapShow();">Provinces</a></p>
+        </div>            
       </div>
     </div>
     <script type="text/javascript" src="js/d3.js"></script>
     <script type="text/javascript" src="js/crossfilter.js"></script>
     <script type="text/javascript" src="js/dc.js"></script>
     <script>
+        
+        function provincesMapShow(){
+            $('#map2').hide();           
+            $('#map').show();
+            map2_chart.filterAll();
+            dc.redrawAll();
+        }
+        
+        function municipalitiesMapShow(){
+            $('#map').hide();
+            $('#map2').show();
+        }
+        
+        $('#map2').hide();
         var sector_chart = dc.pieChart("#sector");
         var status_chart = dc.pieChart("#status");
         var map_chart = dc.geoChoroplethChart("#map");
         var org_chart = dc.rowChart("#orgs");
+        var map2_chart = dc.geoChoroplethChart("#map2");
         
         d3.csv("data/3W_Data.csv", function(csv_data){
             var cf = crossfilter(csv_data);
@@ -59,12 +78,14 @@
             cf.status = cf.dimension(function(d) { return d.Status; });
             cf.pcode = cf.dimension(function(d) { return d.ProvinceCODE; });
             cf.organisation = cf.dimension(function(d) { return d.Organisation; });
+            cf.mcode = cf.dimension(function(d) { return d.MCODE; });
             
             var sector = cf.sector.group();
             var status = cf.status.group();
             var pcode = cf.pcode.group();
             var organisation = cf.organisation.group();
             var all = cf.groupAll();
+            var mcode = cf.mcode.group();
             
             sector_chart.width(180).height(180)
                 .dimension(cf.sector)
@@ -112,7 +133,7 @@
                 map_chart.width(660).height(600)
                     .dimension(cf.pcode)
                     .group(pcode)
-                    .colors(['#EEEEEE', '#CB181D'])
+                    .colors(['#AAAAAA', '#CB181D'])
                     .colorDomain([0, 1])
                     .colorAccessor(function (d) {
                         if(d>0){
@@ -124,13 +145,33 @@
                     .overlayGeoJson(provincesJSON.features, "Province", function (d) {
                         return d.properties.P_Str;
                     })
-                    .projection(d3.geo.mercator().center([125,12]).scale(3000));
+                    .projection(d3.geo.mercator().center([124.0,12]).scale(4000));
                     
-                    dc.renderAll(); 
+                    d3.json("data/Phil_municipalities.geojson", function (municJSON){
+                        map2_chart.width(660).height(600)
+                            .dimension(cf.mcode)
+                            .group(mcode)
+                            .colors(['#AAAAAA', '#CB181D'])
+                            .colorDomain([0, 1])
+                            .colorAccessor(function (d) {
+                                if(d>0){
+                                    return 1;
+                                } else {
+                                    return 0;
+                                }
+                            })
+                            .overlayGeoJson(municJSON.features, "Municipalities", function (d) {
+                                return d.properties.MUN_P_STR;
+                            })
+                            .projection(d3.geo.mercator().center([124.0,12]).scale(4000));
+                            
+                            dc.renderAll(); 
+                    });
+                    
+                    
                 });            
         });
     </script>
-    <script src="//code.jquery.com/jquery.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>
   </body>
 </html>
