@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+  <head>
+    <title>Typhoon Haiyan 3W Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+  </head>
+  <body>
+
+  <div class="container">
+      <div class="row">
+        <div class="col-lg-4">
+          <div class="row">
+            <h1>3W Dashboard</h1>
+            <div class="col-xs-12">Explore 3W data for Typhoon Haiyan. Source <a href="https://docs.google.com/spreadsheet/ccc?key=0At0Y9gPUymOmdHNoQ3VyR2JfZElnLXBJNFY2d3M1TUE&usp=sharing">UN OCHA</a></div>
+            <div id="count-info" class="col-xs-8">
+              <span class="filter-count "></span> selected out of <span class="total-count "></span> records
+            </div>
+            <div class="col-xs-4">
+              <a class="reset btn btn-primary btn-sm" id="reset" href="javascript:dc.filterAll();dc.redrawAll();">Reset All</a>
+            </div>
+          </div>            
+          <div class="row">
+            <div id="sector" class="col-xs-6">
+              <h4>Sector (What)</h4>
+            </div>
+            <div id="status" class="col-xs-6">
+              <h4>Status (What)</h4>
+            </div>
+          </div>
+          <div class="row">
+            <div id="orgs" class="col-lg-12">
+              <h4>Top Ten Organisations (Who)</h4>
+              <div class="col-xs-12">By activity count</div>
+           </div>
+          </div>
+        </div>
+        <div id="map" class="col-lg-8">
+          <h3>Map (Where)</h3><span class="reset" style="display: none;"> | Current filter: <span class="filter"></span></span>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="js/d3.js"></script>
+    <script type="text/javascript" src="js/crossfilter.js"></script>
+    <script type="text/javascript" src="js/dc.js"></script>
+    <script>
+        var sector_chart = dc.pieChart("#sector");
+        var status_chart = dc.pieChart("#status");
+        var map_chart = dc.geoChoroplethChart("#map");
+        var org_chart = dc.rowChart("#orgs");
+        
+        d3.csv("data/3W_Data.csv", function(csv_data){
+            var cf = crossfilter(csv_data);
+            
+            cf.sector = cf.dimension(function(d) { return d.SctrCluster; });
+            cf.status = cf.dimension(function(d) { return d.Status; });
+            cf.pcode = cf.dimension(function(d) { return d.ProvinceCODE; });
+            cf.organisation = cf.dimension(function(d) { return d.Organisation; });
+            
+            var sector = cf.sector.group();
+            var status = cf.status.group();
+            var pcode = cf.pcode.group();
+            var organisation = cf.organisation.group();
+            var all = cf.groupAll();
+            
+            sector_chart.width(180).height(180)
+                .dimension(cf.sector)
+                .group(sector)
+                .innerRadius(10)
+                .colors(['#fd8d3c',
+                        '#fc4e2a',
+                        '#e31a1c',
+                        '#bd0026',
+                        '#800026',
+                        '#807dba',
+                        '#6a51a3',
+                        '#54278f',
+                        '#3f007d'])
+                .colorDomain([0,8])
+                .colorAccessor(function(d, i){return i%9;});
+            
+            status_chart.width(180).height(180)
+                .dimension(cf.status)
+                .group(status)
+                .innerRadius(10)
+                .colors(['#2ca25f',
+                        '#3182bd',
+                        '#ffeda0'])
+                .colorDomain([0,2])
+                .colorAccessor(function(d, i){return i%3;});
+            
+            org_chart.width(320).height(300)
+                .dimension(cf.organisation)
+                .group(organisation)
+                .elasticX(true)
+                .data(function(group) {
+                    return group.top(10);
+                })
+                .colors(['#3182bd'])
+                .colorDomain([0,0])
+                .colorAccessor(function(d, i){return 1;});
+                
+            dc.dataCount("#count-info")
+		.dimension(cf)
+		.group(all);
+                            
+            d3.json("data/Phil_provinces.geojson", function (provincesJSON) {
+                
+                map_chart.width(660).height(600)
+                    .dimension(cf.pcode)
+                    .group(pcode)
+                    .colors(['#EEEEEE', '#CB181D'])
+                    .colorDomain([0, 1])
+                    .colorAccessor(function (d) {
+                        if(d>0){
+                            return 1;
+                        } else {
+                            return 0;
+                        }
+                    })
+                    .overlayGeoJson(provincesJSON.features, "Province", function (d) {
+                        return d.properties.P_Str;
+                    })
+                    .projection(d3.geo.mercator().center([125,12]).scale(3000));
+                    
+                    dc.renderAll(); 
+                });            
+        });
+    </script>
+    <script src="//code.jquery.com/jquery.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>
+  </body>
+</html>
