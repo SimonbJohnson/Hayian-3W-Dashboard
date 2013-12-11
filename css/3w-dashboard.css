@@ -1,0 +1,25 @@
+/*
+ * Override dc.js default styles for selection
+ */
+
+.dc-chart .selected path {
+    stroke-width: 1;
+    stroke: #ccc;
+    fill-opacity: 1;
+}
+
+.dc-chart .selected path {
+    stroke-width: 1;
+    stroke: #ccc;
+    fill-opacity: 1;
+}
+
+/*
+ * Page specific styles
+ */
+
+.logo {
+        height:50px;
+	padding: 5px;
+	margin: 5px;
+}
